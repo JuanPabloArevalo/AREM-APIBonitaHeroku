@@ -6,6 +6,7 @@
 package arem.proyecto.apinoticias.api.controllers;
 
 import arem.proyecto.apinoticias.api.model.Articulo;
+import arem.proyecto.apinoticias.api.model.Consumidor;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -31,6 +32,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(value = "/APINoticias/V1/news")
 public class Controller {
+
+    @RequestMapping(path = "/Bonita", method = RequestMethod.GET)
+    public ResponseEntity<?> getESBBonita() {
+        Consumidor consumidor = new Consumidor();
+        consumidor.run();       
+        return new ResponseEntity<>("MUY BIEN", HttpStatus.OK);
+    }
 
     @RequestMapping(path = "/CNN", method = RequestMethod.GET)
     public ResponseEntity<?> getNoticiasCNNEs() {
