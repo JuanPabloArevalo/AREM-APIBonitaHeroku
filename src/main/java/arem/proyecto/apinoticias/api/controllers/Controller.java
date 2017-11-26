@@ -55,7 +55,7 @@ public class Controller {
     public ResponseEntity<?> getESBBonita() {
         Consumidor consumidor = new Consumidor();
         consumidor.run();
-        return new ResponseEntity<>("MUY BIEN", HttpStatus.OK);
+        return new ResponseEntity<>(consumidor.mensaje, HttpStatus.OK);
     }
 
     @RequestMapping("/db")
