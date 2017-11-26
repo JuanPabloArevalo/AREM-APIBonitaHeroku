@@ -7,9 +7,18 @@ package arem.proyecto.apinoticias.api.controllers;
 
 import arem.proyecto.apinoticias.api.model.Articulo;
 import arem.proyecto.apinoticias.api.model.Consumidor;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import javax.sql.DataSource;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -19,6 +28,9 @@ import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,342 +45,52 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(value = "/APINoticias/V1/news")
 public class Controller {
 
+    @Value("${spring.datasource.url}")
+    private String dbUrl;
+
+    @Autowired
+    private DataSource dataSource;
+
     @RequestMapping(path = "/Bonita", method = RequestMethod.GET)
     public ResponseEntity<?> getESBBonita() {
         Consumidor consumidor = new Consumidor();
-        consumidor.run();       
+        consumidor.run();
         return new ResponseEntity<>("MUY BIEN", HttpStatus.OK);
     }
 
-    @RequestMapping(path = "/CNN", method = RequestMethod.GET)
-    public ResponseEntity<?> getNoticiasCNNEs() {
-        HttpClient client = HttpClientBuilder.create().build();
-        HttpGet request = new HttpGet("https://newsapi.org/v2/top-headlines?sources=cnn-es&apiKey=eb29210794c24d798995ffe5d4a652fb");
-        Set<Articulo> map = new HashSet<>();
-        try {
-            HttpResponse response = client.execute(request);
-            HttpEntity entity = response.getEntity();
-            String content = EntityUtils.toString(entity, "UTF-8");
-            JSONObject jsonObject = new JSONObject(content);
-            JSONArray arregloJs = jsonObject.getJSONArray("articles");
-            Articulo articulo;
-            String titulo, autor, descripcion, fecha, url, imagen;
-            for (int i = 0; i < arregloJs.length(); i++) {
-                articulo = new Articulo();
-//Titulo
-                try {
-                    titulo = arregloJs.getJSONObject(i).getString("title");
-                } catch (JSONException e) {
-                    titulo = "";
-                }
-                articulo.setTitulo(titulo);
-//Autor               
-                try {
-                    autor = arregloJs.getJSONObject(i).getString("author");
-                } catch (JSONException e) {
-                    autor = "";
-                }
-                articulo.setAutor(autor);
-//Descripcion
-                try {
-                    descripcion = arregloJs.getJSONObject(i).getString("description");
-                } catch (JSONException e) {
-                    descripcion = "";
-                }
-                articulo.setDescripcion(descripcion);
-//Fecha Publicacion 
-                try {
-                    fecha = arregloJs.getJSONObject(i).getString("publishedAt");
-                } catch (JSONException e) {
-                    fecha = "";
-                }
+    @RequestMapping("/db")
+    String db(Map<String, Object> model) {
 
-                articulo.setFechaPublicacion(fecha);
-//URL
-                try {
-                    url = arregloJs.getJSONObject(i).getString("url");
-                } catch (JSONException e) {
-                    url = "";
-                }
-                articulo.setUrl(url);
-//URL Imagen
-                try {
-                    imagen = arregloJs.getJSONObject(i).getString("urlToImage");
-                } catch (JSONException e) {
-                    imagen = "";
-                }
-                articulo.setUrlImagen(imagen);
-                map.add(articulo);
+        Consumidor consumidor = new Consumidor();
+        consumidor.run();
+
+        try (Connection connection = dataSource.getConnection()) {
+            Statement stmt = connection.createStatement();
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS bonita (mensaje varchar)");
+            stmt.executeUpdate("INSERT INTO bonita VALUES ('"+consumidor.mensaje+"')");
+            ResultSet rs = stmt.executeQuery("SELECT mensaje FROM bonita");
+
+            ArrayList<String> output = new ArrayList<String>();
+            while (rs.next()) {
+                output.add("Read from DB: " + rs.getTimestamp("mensaje"));
             }
-            return new ResponseEntity<>(map, HttpStatus.OK);
-        } catch (IOException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+
+            model.put("records", output);
+            return "db";
+        } catch (Exception e) {
+            model.put("message", e.getMessage());
+            return "error";
         }
     }
 
-    @RequestMapping(path = "/elMundo", method = RequestMethod.GET)
-    public ResponseEntity<?> getNoticiasElMundo() {
-        HttpClient client = HttpClientBuilder.create().build();
-        HttpGet request = new HttpGet("https://newsapi.org/v2/top-headlines?sources=el-mundo&apiKey=eb29210794c24d798995ffe5d4a652fb");
-        Set<Articulo> map = new HashSet<>();
-        try {
-            System.out.print("ACA");
-            HttpResponse response = client.execute(request);
-            HttpEntity entity = response.getEntity();
-            String content = EntityUtils.toString(entity, "UTF-8");
-            JSONObject jsonObject = new JSONObject(content);
-            JSONArray arregloJs = jsonObject.getJSONArray("articles");
-            Articulo articulo;
-            String titulo, autor, descripcion, fecha, url, imagen;
-            for (int i = 0; i < arregloJs.length(); i++) {
-                articulo = new Articulo();
-//Titulo
-                try {
-                    titulo = arregloJs.getJSONObject(i).getString("title");
-                } catch (JSONException e) {
-                    titulo = "";
-                }
-                articulo.setTitulo(titulo);
-//Autor               
-                try {
-                    autor = arregloJs.getJSONObject(i).getString("author");
-                } catch (JSONException e) {
-                    autor = "";
-                }
-                articulo.setAutor(autor);
-//Descripcion
-                try {
-                    descripcion = arregloJs.getJSONObject(i).getString("description");
-                } catch (JSONException e) {
-                    descripcion = "";
-                }
-                articulo.setDescripcion(descripcion);
-//Fecha Publicacion 
-                try {
-                    fecha = arregloJs.getJSONObject(i).getString("publishedAt");
-                } catch (JSONException e) {
-                    fecha = "";
-                }
-
-                articulo.setFechaPublicacion(fecha);
-//URL
-                try {
-                    url = arregloJs.getJSONObject(i).getString("url");
-                } catch (JSONException e) {
-                    url = "";
-                }
-                articulo.setUrl(url);
-//URL Imagen
-                try {
-                    imagen = arregloJs.getJSONObject(i).getString("urlToImage");
-                } catch (JSONException e) {
-                    imagen = "";
-                }
-                articulo.setUrlImagen(imagen);
-                map.add(articulo);
-            }
-            return new ResponseEntity<>(map, HttpStatus.OK);
-        } catch (IOException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
-        }
-    }
-
-    @RequestMapping(path = "/laGaceta", method = RequestMethod.GET)
-    public ResponseEntity<?> getNoticiasLaGaceta() {
-        HttpClient client = HttpClientBuilder.create().build();
-        HttpGet request = new HttpGet("https://newsapi.org/v2/top-headlines?sources=la-gaceta&apiKey=eb29210794c24d798995ffe5d4a652fb");
-        Set<Articulo> map = new HashSet<>();
-        try {
-            HttpResponse response = client.execute(request);
-            HttpEntity entity = response.getEntity();
-            String content = EntityUtils.toString(entity, "UTF-8");
-            JSONObject jsonObject = new JSONObject(content);
-            JSONArray arregloJs = jsonObject.getJSONArray("articles");
-            Articulo articulo;
-            String titulo, autor, descripcion, fecha, url, imagen;
-            for (int i = 0; i < arregloJs.length(); i++) {
-                articulo = new Articulo();
-//Titulo
-                try {
-                    titulo = arregloJs.getJSONObject(i).getString("title");
-                } catch (JSONException e) {
-                    titulo = "";
-                }
-                articulo.setTitulo(titulo);
-//Autor               
-                try {
-                    autor = arregloJs.getJSONObject(i).getString("author");
-                } catch (JSONException e) {
-                    autor = "";
-                }
-                articulo.setAutor(autor);
-//Descripcion
-                try {
-                    descripcion = arregloJs.getJSONObject(i).getString("description");
-                } catch (JSONException e) {
-                    descripcion = "";
-                }
-                articulo.setDescripcion(descripcion);
-//Fecha Publicacion 
-                try {
-                    fecha = arregloJs.getJSONObject(i).getString("publishedAt");
-                } catch (JSONException e) {
-                    fecha = "";
-                }
-
-                articulo.setFechaPublicacion(fecha);
-//URL
-                try {
-                    url = arregloJs.getJSONObject(i).getString("url");
-                } catch (JSONException e) {
-                    url = "";
-                }
-                articulo.setUrl(url);
-//URL Imagen
-                try {
-                    imagen = arregloJs.getJSONObject(i).getString("urlToImage");
-                } catch (JSONException e) {
-                    imagen = "";
-                }
-                articulo.setUrlImagen(imagen);
-                map.add(articulo);
-            }
-            return new ResponseEntity<>(map, HttpStatus.OK);
-        } catch (IOException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
-        }
-    }
-
-    @RequestMapping(path = "/marca", method = RequestMethod.GET)
-    public ResponseEntity<?> getNoticiasMarca() {
-        HttpClient client = HttpClientBuilder.create().build();
-        HttpGet request = new HttpGet("https://newsapi.org/v2/top-headlines?sources=marca&apiKey=eb29210794c24d798995ffe5d4a652fb");
-        Set<Articulo> map = new HashSet<>();
-        try {
-            HttpResponse response = client.execute(request);
-            HttpEntity entity = response.getEntity();
-            String content = EntityUtils.toString(entity, "UTF-8");
-            JSONObject jsonObject = new JSONObject(content);
-            JSONArray arregloJs = jsonObject.getJSONArray("articles");
-            Articulo articulo;
-            String titulo, autor, descripcion, fecha, url, imagen;
-            for (int i = 0; i < arregloJs.length(); i++) {
-                articulo = new Articulo();
-//Titulo
-                try {
-                    titulo = arregloJs.getJSONObject(i).getString("title");
-                } catch (JSONException e) {
-                    titulo = "";
-                }
-                articulo.setTitulo(titulo);
-//Autor               
-                try {
-                    autor = arregloJs.getJSONObject(i).getString("author");
-                } catch (JSONException e) {
-                    autor = "";
-                }
-                articulo.setAutor(autor);
-//Descripcion
-                try {
-                    descripcion = arregloJs.getJSONObject(i).getString("description");
-                } catch (JSONException e) {
-                    descripcion = "";
-                }
-                articulo.setDescripcion(descripcion);
-//Fecha Publicacion 
-                try {
-                    fecha = arregloJs.getJSONObject(i).getString("publishedAt");
-                } catch (JSONException e) {
-                    fecha = "";
-                }
-
-                articulo.setFechaPublicacion(fecha);
-//URL
-                try {
-                    url = arregloJs.getJSONObject(i).getString("url");
-                } catch (JSONException e) {
-                    url = "";
-                }
-                articulo.setUrl(url);
-//URL Imagen
-                try {
-                    imagen = arregloJs.getJSONObject(i).getString("urlToImage");
-                } catch (JSONException e) {
-                    imagen = "";
-                }
-                articulo.setUrlImagen(imagen);
-                map.add(articulo);
-            }
-            return new ResponseEntity<>(map, HttpStatus.OK);
-        } catch (IOException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
-        }
-
-    }
-
-    @RequestMapping(path = "/laNacion", method = RequestMethod.GET)
-    public ResponseEntity<?> getNoticiasLaNacion() {
-        HttpClient client = HttpClientBuilder.create().build();
-        HttpGet request = new HttpGet("https://newsapi.org/v2/top-headlines?sources=la-nacion&apiKey=eb29210794c24d798995ffe5d4a652fb");
-        Set<Articulo> map = new HashSet<>();
-        try {
-            HttpResponse response = client.execute(request);
-            HttpEntity entity = response.getEntity();
-            String content = EntityUtils.toString(entity, "UTF-8");
-            JSONObject jsonObject = new JSONObject(content);
-            JSONArray arregloJs = jsonObject.getJSONArray("articles");
-            Articulo articulo;
-            String titulo, autor, descripcion, fecha, url, imagen;
-            for (int i = 0; i < arregloJs.length(); i++) {
-                articulo = new Articulo();
-//Titulo
-                try {
-                    titulo = arregloJs.getJSONObject(i).getString("title");
-                } catch (JSONException e) {
-                    titulo = "";
-                }
-                articulo.setTitulo(titulo);
-//Autor               
-                try {
-                    autor = arregloJs.getJSONObject(i).getString("author");
-                } catch (JSONException e) {
-                    autor = "";
-                }
-                articulo.setAutor(autor);
-//Descripcion
-                try {
-                    descripcion = arregloJs.getJSONObject(i).getString("description");
-                } catch (JSONException e) {
-                    descripcion = "";
-                }
-                articulo.setDescripcion(descripcion);
-//Fecha Publicacion 
-                try {
-                    fecha = arregloJs.getJSONObject(i).getString("publishedAt");
-                } catch (JSONException e) {
-                    fecha = "";
-                }
-
-                articulo.setFechaPublicacion(fecha);
-//URL
-                try {
-                    url = arregloJs.getJSONObject(i).getString("url");
-                } catch (JSONException e) {
-                    url = "";
-                }
-                articulo.setUrl(url);
-//URL Imagen
-                try {
-                    imagen = arregloJs.getJSONObject(i).getString("urlToImage");
-                } catch (JSONException e) {
-                    imagen = "";
-                }
-                articulo.setUrlImagen(imagen);
-                map.add(articulo);
-            }
-            return new ResponseEntity<>(map, HttpStatus.OK);
-        } catch (IOException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+    @Bean
+    public DataSource dataSource() throws SQLException {
+        if (dbUrl == null || dbUrl.isEmpty()) {
+            return new HikariDataSource();
+        } else {
+            HikariConfig config = new HikariConfig();
+            config.setJdbcUrl(dbUrl);
+            return new HikariDataSource(config);
         }
     }
 

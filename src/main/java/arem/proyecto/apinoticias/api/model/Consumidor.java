@@ -20,7 +20,7 @@ import javax.jms.Message;
 
 public class Consumidor implements Runnable, ExceptionListener{
 
-    
+    public String mensaje;
     public Consumidor(){
         
 
@@ -53,8 +53,10 @@ public class Consumidor implements Runnable, ExceptionListener{
             if (message instanceof TextMessage) {
                 TextMessage textMessage = (TextMessage) message;
                 String text = textMessage.getText();
+                mensaje=text;
                 System.out.println("Received: " + text);
             } else {
+                mensaje = "";
                 System.out.println("Received: " + message);
             }
             
