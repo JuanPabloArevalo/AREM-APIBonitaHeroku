@@ -60,6 +60,27 @@ public class Controller {
 
     @RequestMapping("/db")
     String db(Map<String, Object> model) {
+        try (Connection connection = dataSource.getConnection()) {
+            Statement stmt = connection.createStatement();
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS ticks (tick timestamp)");
+            stmt.executeUpdate("INSERT INTO ticks VALUES (now())");
+            ResultSet rs = stmt.executeQuery("SELECT tick FROM ticks");
+
+            ArrayList<String> output = new ArrayList<String>();
+            while (rs.next()) {
+                output.add("Read from DB: " + rs.getTimestamp("tick"));
+            }
+
+            model.put("records", output);
+            return "db";
+        } catch (Exception e) {
+            model.put("message", e.getMessage());
+            return "error";
+        }
+    }
+
+    @RequestMapping("/db2")
+    String db2(Map<String, Object> model) {
 
         Consumidor consumidor = new Consumidor();
         consumidor.run();
@@ -67,7 +88,7 @@ public class Controller {
         try (Connection connection = dataSource.getConnection()) {
             Statement stmt = connection.createStatement();
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS bonita (mensaje varchar)");
-            stmt.executeUpdate("INSERT INTO bonita VALUES ('"+consumidor.mensaje+"')");
+            stmt.executeUpdate("INSERT INTO bonita VALUES ('" + consumidor.mensaje + "')");
             ResultSet rs = stmt.executeQuery("SELECT mensaje FROM bonita");
 
             ArrayList<String> output = new ArrayList<String>();
